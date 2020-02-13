@@ -47,13 +47,6 @@ import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
-    val filename = "test.png"
-    val sd = Environment.getExternalStorageDirectory()
-    val dest = File(sd,filename)
-
-    var fotoapparatState : FotoapparatState? = null
-    var cameraStatus : CameraState? = null
-    var flashState : FlashState? = null
 
 
 
@@ -62,20 +55,9 @@ class MainActivity : AppCompatActivity() {
 
     private var mEdgeImageView: ImageView? = null
     private var mIsOpenCVReady = false
-    internal var PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE,android.Manifest.permission.READ_EXTERNAL_STORAGE)
+    internal var PERMISSIONS = arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
 
-    private fun hasNoPermissions(): Boolean{
-        return ContextCompat.checkSelfPermission(this,
-            android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,
-            android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-    }
 
-    fun requestPermission(){
-        ActivityCompat.requestPermissions(this, PERMISSIONS,0)
-    }
-
-    var fotoapparat: Fotoapparat? = null
 
     fun detectEdge(image: Bitmap): Bitmap {
         val src = Mat()
@@ -106,7 +88,6 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        createFotoapparat()
 
         mEdgeImageView = findViewById(R.id.imageView)
 
@@ -118,74 +99,11 @@ class MainActivity : AppCompatActivity() {
 
 
 
-        cameraStatus = CameraState.BACK
-        flashState = FlashState.OFF
-        fotoapparatState = FotoapparatState.OFF
-
-        fab_camera.setOnClickListener {
-            takePhoto()
-        }
-
-        fab_switch_camera.setOnClickListener {
-            switchCamera()
-
-        }
-
-        fab_flash.setOnClickListener {
-            changeFlashState()
-
-        }
     }
 
 
-    private fun createFotoapparat(){
-        val cameraView = findViewById<CameraView>(R.id.camera_view)
 
-        fotoapparat = Fotoapparat(
-            context = this,
-            view = cameraView,
-            scaleType = ScaleType.CenterCrop,
-            lensPosition = back(),
-            logger = loggers(
-                logcat()
-            ),
-            cameraErrorCallback = {error ->
-                println("Recorder errors: $error")
 
-            }
-        )
-
-    }
-
-    private fun switchCamera(){
-        fotoapparat?.switchTo(
-            lensPosition = if (cameraStatus == CameraState.BACK) front() else back(),
-            cameraConfiguration = CameraConfiguration()
-        )
-        if (cameraStatus == CameraState.BACK) cameraStatus = CameraState.FRONT
-        else cameraStatus == CameraState.BACK
-
-    }
-    private fun takePhoto(){
-        if(hasNoPermissions()){
-            requestPermission()
-        }else{
-            fotoapparat
-                ?.takePicture()
-                ?.saveToFile(dest)
-        }
-    }
-
-    private fun changeFlashState(){
-        fotoapparat?.updateConfiguration(
-            CameraConfiguration(
-                flashMode = if(flashState == FlashState.TORCH) off() else torch()
-            )
-        )
-
-        if (flashState ==FlashState.TORCH) flashState = FlashState.OFF
-        else flashState = FlashState.TORCH
-    }
 
 
 
@@ -201,20 +119,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        fotoapparat?.stop()
-    }
-
-    override fun onStart() {
-        super.onStart()
-        if (hasNoPermissions()) {
-            requestPermission()
-        }else{
-            fotoapparat?.start()
-            fotoapparatState = FotoapparatState.ON
-        }
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -353,17 +257,3 @@ class MainActivity : AppCompatActivity() {
 
 }
 
-enum class FlashState {
-    TORCH, OFF
-
-}
-
-enum class CameraState {
-    FRONT, BACK
-
-}
-
-enum class FotoapparatState {
-    ON, OFF
-
-}
